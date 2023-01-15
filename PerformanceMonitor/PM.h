@@ -1,3 +1,10 @@
+/**
+ *	FILENAME		:		PM.h
+ *	LASTEDIT		:		2023/01/15 12:14
+ *	LICENSE			:		GNU Public License version 3
+ *	PROGRAMMER		:		Executif
+**/
+
 #pragma once
 
 #define _CRT_SECURE_NO_WARNINGS true

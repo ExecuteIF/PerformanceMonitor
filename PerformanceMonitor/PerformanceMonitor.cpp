@@ -1,5 +1,13 @@
-﻿#include "PM.h"
+﻿/**
+ *	FILENAME		:		PerformanceMonitor.cpp
+ *	LASTEDIT		:		2023/01/15 12:14
+ *	LICENSE			:		GNU Public License version 3
+ *	PROGRAMMER		:		Executif
+**/
 
+#include "PM.h"
+
+// global variables
 bool stop = false;
 bool sleep = false;
 double CPUUtilData = 0;
@@ -30,6 +38,10 @@ void fatal(int value) {
 	exit(value);
 }
 
+/// <summary>
+/// get current time
+/// </summary>
+/// <returns></returns>
 string getTime()
 {
 	time_t timep;
@@ -38,6 +50,9 @@ string getTime()
 	strftime(ans, sizeof(ans), "%Y-%m-%d %H:%M:%S", localtime(&timep));
 	return ans;
 }
+/// <summary>
+/// the base of circle actors and line chart actors
+/// </summary>
 class Actor {
 public:
 	bool init_ed = false;
@@ -64,6 +79,9 @@ public:
 	}
 
 };
+/// <summary>
+/// in charge of drawing circles(engine state)
+/// </summary>
 class circleActor : public Actor  {
 	Point numberPos;
 	Point circleCenter;
@@ -112,8 +130,17 @@ private:
 	{
 		return (number.length() - 1) * width;
 	}
+	/// <summary>
+	/// draw the value as number
+	/// </summary>
+	/// <param name="value"></param>
+	/// <param name="colour"></param>
+	/// <param name="frame">the targeting frames to draw</param>
+	/// <param name="stat"></param>
+	/// <param name="decimals"></param>
 	void drawNumber(double value, color colour, Mat frame[2], state stat, short decimals)
 	{
+		// different states
 		if (stat == STATE_FAIL) {
 			this->tmp = "0.0";
 			colour = COLOR_AMBER;
@@ -163,14 +190,23 @@ private:
 			1.5
 		);
 	}
+	/// <summary>
+	/// draw the circle(graphic display part)
+	/// </summary>
+	/// <param name="value"></param>
+	/// <param name="colour"></param>
+	/// <param name="frame"></param>
+	/// <param name="stat"></param>
 	void drawCircle(double value, color colour, Mat frame[2], state stat)
 	{
+		// different states, just exit
 		if (stat == STATE_FAIL) {
 			return;
 		}
 		if (stat == STATE_ERROR) {
 			return;
 		}
+		// draw the fan-shape
 		ellipse (
 			frame[1],
 			this->circleCenter,
@@ -181,6 +217,7 @@ private:
 			getColor(colour),
 			-1
 		);
+		// draw the pointer
 		ellipse(
 			frame[0],
 			this->circleCenter,
@@ -193,6 +230,9 @@ private:
 		);
 	}
 };
+/// <summary>
+/// in charge of drawing line charts
+/// </summary>
 class lineChartActor : public Actor {
 	short maxn;
 	bool doDrawFrame;
@@ -216,10 +256,10 @@ public:
 	{
 		this->pos1 = _pos1;
 		this->pos2 = _pos2;
-		this->minX = min(_pos1.x, _pos2.x) + 5;
-		this->minY = min(_pos1.y, _pos2.y) + 5;
-		this->maxX = max(_pos1.x, _pos2.x) - 5;
-		this->maxY = max(_pos1.y, _pos2.y) - 5;
+		this->minX = min(_pos1.x, _pos2.x);
+		this->minY = min(_pos1.y, _pos2.y) + 2;
+		this->maxX = max(_pos1.x, _pos2.x);
+		this->maxY = max(_pos1.y, _pos2.y) - 2;
 		this->minValue = _minValue;
 		this->maxValue = _maxValue;
 		this->valueFactor = _valueFactor;
@@ -232,9 +272,13 @@ public:
 			data.push_back(-1);
 		}
 	}
+	/// <summary>
+	/// add a value.
+	/// </summary>
+	/// <param name="value"></param>
 	void addValue(short value)
 	{
-		for (int i = this->maxn - 1; i > 0; --i) {
+		for (int i = this->maxn - 1; i >= 0; --i) {
 			this->data[i + 1] = this->data[i];
 		}
 		this->data[0] = value;
@@ -248,33 +292,124 @@ public:
 			this->drawFrame(colour, frame, stat);
 		}
 		this->drawData(colour, frame, stat);
+		if (this->doDrawAverage) {
+			this->drawAverage(frame, stat);
+		}
 	}
 private:
+	/// <summary>
+	/// calculate the average value
+	/// </summary>
+	/// <returns></returns>
 	short calcAverage()
 	{
 		int tmp = 0;
+		int minus = 0;
 		for (int i = 0; i < this->maxn; ++i) {
-			tmp += this->data[i];
+			if (tmp != -1) {
+				tmp += this->data[i];
+				++minus;
+			}
 		}
-		return tmp / this->maxn;
+		return minus == 0 ? -1 : (tmp / minus);
 	}
+	/// <summary>
+	/// draw the frame of all(a rectangle)
+	/// </summary>
+	/// <param name="colour"></param>
+	/// <param name="frame"></param>
+	/// <param name="stat"></param>
 	void drawFrame(color colour, Mat frame[2], state stat)
 	{
 		rectangle(frame[0], this->pos1, this->pos2, getColor(colour), 1);
 	}
+	/// <summary>
+	/// draw the data
+	/// </summary>
+	/// <param name="colour"></param>
+	/// <param name="frame"></param>
+	/// <param name="stat"></param>
 	void drawData(color colour, Mat frame[2], state stat)
 	{
+		// draw all datas
 		for (int i = this->maxn - 1; i > 0; --i) {
-			if (this->data[i] != -1 && this->data[i - 1] != -1) {
+			if (this->data[i] != -1 && this->data[i - 1] != -1) { // if the data is valid
+				// draw the data
 				line(
 					frame[0],
-					{ int(this->minX + this->xFactor * (i + 1)), this->data[i - 1] },
-					{ int(this->minX + this->xFactor * i), this->data[i] },
+					{ 
+						int(this->maxX - this->xFactor * (i - 1)), 
+						int(round(this->maxY - (this->data[i - 1] * this->valueFactor)))
+					},
+					{ 
+						int(this->maxX - this->xFactor * i), 
+						int(round(this->maxY - (this->data[i] * this->valueFactor)))
+					},
 					getColor(colour),
-					1
+					2
+				);
+				// draw the shadow
+				line(
+					frame[1],
+					{
+						int(this->maxX - this->xFactor * (i - 1)),
+						int(round(this->maxY))
+					},
+					{
+						int(this->maxX - this->xFactor * (i - 1)),
+						int(round(this->maxY - (this->data[i] * this->valueFactor)))
+					},
+					getColor(colour),
+					2
 				);
 			}
 		}
+	}
+	void drawAverage(Mat frame[2], state stat)
+	{
+		short average = calcAverage();
+		// draw the average line covers on the data
+		line(
+			frame[0],
+			{
+				int(this->minX - this->xFactor),
+				int(round(this->maxY - (average * this->valueFactor)))
+			},
+			{
+				int(this->maxX - this->xFactor),
+				int(round(this->maxY - (average * this->valueFactor)))
+			},
+			Scalar(0, 255, 0),
+			1
+		);
+		// draw the upper part of '>'
+		line(
+			frame[0],
+			{
+				int(this->minX - 5 - this->xFactor),
+				int(round(this->maxY - (average * this->valueFactor)) + 5)
+			},
+			{
+				int(this->minX + 2 - this->xFactor),
+				int(round(this->maxY - (average * this->valueFactor)))
+			},
+			Scalar(0, 255, 0),
+			2
+		);
+		// draw the downer part of '>'
+		line(
+			frame[0],
+			{
+				int(this->minX - 5 - this->xFactor),
+				int(round(this->maxY - (average * this->valueFactor)) - 5)
+			},
+			{
+				int(this->minX + 2 - this->xFactor),
+				int(round(this->maxY - (average * this->valueFactor)))
+			},
+			Scalar(0, 255, 0),
+			2
+		);
 	}
 };
 void drawTopProcesses(Mat frame) {
@@ -342,14 +477,20 @@ void drawTopProcesses(Mat frame) {
 	finalProcessesInUse = false;
 }
 
+/// <summary>
+/// desides when the program sleep(use very low CPU)
+/// </summary>
 void sleepUpdater()
 {
 	while (!stop) {
-		sleep = GetForegroundWindow() != hwnd;
+		sleep = IsIconic(hwnd);
 		Sleep(250);
 	}
 }
 
+/// <summary>
+/// get the list of all the processes
+/// </summary>
 void getProcesses()
 {
 	SECURITY_ATTRIBUTES sa;
@@ -395,7 +536,7 @@ void getProcesses()
 	stringstream stream;
 	Processes.clear();
 	memset(buffer, 0, sizeof(buffer));
-	while (true) {
+	while (true) { // read the result of console command
 		memset(buffer, 0, sizeof(buffer));
 		if (ReadFile(hRead, buffer, sizeof(buffer), &bytesRead, NULL) == NULL)
 			break;
@@ -404,7 +545,7 @@ void getProcesses()
 		}
 	}
 
-	auto nextln = [](queue<char>* dat) {
+	auto nextln = [](queue<char>* dat) { // get next line
 		char tmp;
 		string ans;
 		for (register int i = 0;; ++i) {
@@ -418,7 +559,7 @@ void getProcesses()
 		return ans;
 	};
 	nextln(&data);
-	while (!data.empty()) {
+	while (!data.empty()) { // get all the process datas and store them into vector<pair<string, int>>Processes
 		currentln = nextln(&data);
 		tmp.clear();
 		temp.clear();
@@ -475,6 +616,10 @@ __int64 CompareFileTime2(const FILETIME& preTime, const FILETIME& nowTime)
 {
 	return Filetime2Int64(nowTime) - Filetime2Int64(preTime);
 }
+/// <summary>
+/// get CPU utility (x%)
+/// </summary>
+/// <returns></returns>
 double getCPUUtilPercent()
 {
 	FILETIME preIdleTime;
@@ -498,6 +643,11 @@ double getCPUUtilPercent()
 
 	return 1.0 * (kernel + user - idle) / (kernel + user);
 }
+/// <summary>
+/// get RAM utility (x%)
+/// </summary>
+/// <param name="getPhysicalMemory"></param>
+/// <returns></returns>
 double getRAMUtilPercent(bool getPhysicalMemory = false)
 {
 	MEMORYSTATUSEX statex;
@@ -511,6 +661,10 @@ double getRAMUtilPercent(bool getPhysicalMemory = false)
 	}
 	return (double)usePhys / (double)physical_memory;
 }
+/// <summary>
+/// get CPU frequency (GHZ)
+/// </summary>
+/// <returns></returns>
 double getCPUFreq()
 {
 	unsigned __int64 t1, t2;
@@ -520,6 +674,8 @@ double getCPUFreq()
 	return (t2 - t1) / 1e9;
 }
 
+
+// update the datas in given frequency(currently 1 second per update)
 void updateProcessesData()
 {
 	auto sortCondition = [](pair<string, int> a, pair<string, int> b) {
@@ -582,6 +738,7 @@ void updateCPUFreqData()
 	}
 }
 
+// smooth the update makes it not seems to bad
 void updateSmoother()
 {
 	while (!stop) {
@@ -608,16 +765,22 @@ void updateSmoother()
 
 int main(int argc, char* argv[])
 {
+	// hide console
 	HWND console = FindWindow(L"ConsoleWindowClass", NULL);
 	if (console == nullptr) {
 		fatal(-1);
 	}
-	ShowWindow(console, SW_HIDE); // hide console
+	ShowWindow(console, SW_HIDE);
+
+	// read initial images
 	register Mat img = cv::imread("GFX/background.png");
 	Mat black = imread("GFX/blank.png");
 	if (img.empty() || black.empty()) {
 		fatal(-2);
 	}
+
+	// pre-process initial images
+	// attach RAM state
 	totalRAM = getRAMUtilPercent(true);
 	int tmp = totalRAM / 1000;
 	double temp;
@@ -633,6 +796,7 @@ int main(int argc, char* argv[])
 		Scalar(255, 255, 255),
 		1.5
 	);
+	// attach upper lines of texts
 	WCHAR PCName[255];
 	unsigned long size = 255;
 	GetComputerName(PCName, &size);
@@ -647,11 +811,15 @@ int main(int argc, char* argv[])
 		Scalar(255, 255, 255),
 		0.8
 	);
+
+	// create openCV window and get the handle of targeting window
 	cv::namedWindow("PCAM", WINDOW_AUTOSIZE);
 	hwnd = FindWindow(NULL, L"PCAM");
 	if (hwnd == nullptr) {
 		fatal(-3);
 	}
+
+	// create updater processes
 	thread tSleepUpdater(sleepUpdater);
 	thread tUpdateCPUUtilData(updateCPUUtilData);
 	thread tUpdateRAMUtilData(updateRAMUtilData);
@@ -659,38 +827,50 @@ int main(int argc, char* argv[])
 	thread tUpdateSmoother(updateSmoother);
 	thread tUpdateProcessesData(updateProcessesData);
 
+	// create actors
 	circleActor CPUUtil, RAMUtil, CPUFreq, RAMStat;
+	lineChartActor CPUChart, RAMChart;
 	CPUUtil.init({ 165, 87 }, { 117, 96 }, 0, 100, 2.1, 0);
 	RAMUtil.init({ 400,87 }, { 349,96 }, 0, 100, 2.1, 0);
 	CPUFreq.init({ 165,256 }, { 117,267 }, 0, 10, 20, 0);
 	RAMStat.init({ 400,256 }, { 349,267 }, 0, totalRAM / 1000.0, 210 / (totalRAM / 1000), 0);
-	lineChartActor CPUChart, RAMChart;
-	CPUChart.init({ 40, 380 }, { 340, 520 }, 0, 100, 1, 1, true, true, 100);
-	RAMChart.init({ 365,380 }, { 665, 520 }, 0, 100, 1, 1, true, true, 100);
+	CPUChart.init({ 40, 380 }, { 340, 520 }, 0, 100, 1.3, 2, true, true, 151);
+	RAMChart.init({ 365,380 }, { 665, 520 }, 0, 100, 1.3, 2, true, true, 151);
 
+	// init frames
 	Mat frame[2];
 
+	// init FPS loggers
 	clock_t start, end, mspf = 0;
 	int fps = 0;
 
+	// main loop
 	while(true) {
+		// log fps data 1/2
 		start = clock();
+
+		// check if can sleep
 		if (sleep) {
 			cv::waitKey(1000);
 		}
+		// clone basic frames and start drawing
 		frame[0] = img.clone();
 		frame[1] = black.clone();
+		//                                                 ↓
+		// check if need to exit(close window button "_ 口 X" clicked)
+		//                                                 ↑
 		try {
 			getWindowProperty("PCAM", 0);
 		}
 		catch(exception){
 			break;
 		}
+		// draw frames
 		CPUUtil.draw(
-			finalCPUUtilData,
-			CPUUtilData > 90 ? COLOR_RED : (CPUUtilData > 80 ? COLOR_AMBER : COLOR_WHITE),
-			frame,
-			finalCPUUtilData == 0 ? STATE_FAIL : STATE_NORMAL
+			finalCPUUtilData, // the data
+			CPUUtilData > 90 ? COLOR_RED : (CPUUtilData > 80 ? COLOR_AMBER : COLOR_WHITE), // the color, currently controlled by the utility(<80%: white; <90%: amber; <100%: red)
+			frame, // the targeting frames
+			finalCPUUtilData == 0 ? STATE_FAIL : STATE_NORMAL // the state, currently controlled by utility data(0: fail, any other: normal)
 		);
 		RAMUtil.draw(
 			finalRAMUtilData,
@@ -712,6 +892,7 @@ int main(int argc, char* argv[])
 			frame,
 			temp == 0 ? STATE_FAIL : STATE_NORMAL
 		);
+		// draw last data update time and fps information on the upper line
 		putText(
 			frame[0],
 			"last data update: " + getTime() + ", " + to_string(fps) + " fps" + (sleep?"[SLEEP MODE]":"[NORMAL]"),
@@ -721,29 +902,39 @@ int main(int argc, char* argv[])
 			Scalar(255, 255, 255),
 			0.8
 		);
+		// draw top ram use processes
 		drawTopProcesses(frame[0]);
-		CPUChart.addValue(CPUUtilData);
+
+		// draw line chart of CPU utility
+		CPUChart.addValue(finalCPUUtilData);
 		CPUChart.draw(
-			COLOR_WHITE, 
-			frame, 
-			CPUUtilData==0?STATE_FAIL:STATE_NORMAL
+			COLOR_WHITE, // color
+			frame,  // targeting frames
+			CPUUtilData==0?STATE_FAIL:STATE_NORMAL // the state, currently controlled by utility(0: fail, any other: normal)
 		);
-		RAMChart.addValue(RAMUtilData);
+
+		// draw line chart of RAM utility
+		RAMChart.addValue(finalRAMUtilData);
 		RAMChart.draw(
 			COLOR_WHITE,
 			frame,
 			RAMUtilData == 0 ? STATE_FAIL : STATE_NORMAL
 		);
 
-
+		// combie the two frames into 1, get 100% of frame0 and 30% frame1
 		cv::addWeighted(frame[0], 1, frame[1], 0.3, 0, frame[0]);
+		// display the frame to the window
 		cv::imshow("PCAM", frame[0]);
+		// wait 17 ms
 		cv::waitKey(17);
+		// log fps data 2/2
 		end = clock();
+		// process fps data
 		mspf = (double)(end - start);
 		fps = 1000 / max(mspf, 1);
 	}
 
+	// normal end process
 	stop = true;
 	if (tSleepUpdater.joinable()) {
 		tSleepUpdater.join();
@@ -764,6 +955,7 @@ int main(int argc, char* argv[])
 	if (tUpdateSmoother.joinable()) {
 		tUpdateSmoother.detach();
 	}
+	// destroy the console window
 	::SendMessage(console, WM_CLOSE, 0, 0);
 	return 0;
 }
