@@ -13,14 +13,9 @@ A Performance Monitor with Boeing 737 EICAS Style
 - Microsoft Windows 10 version 22H2 or higher
 - x64 system
 - 8GB or more RAM
-- Microsoft Visual Studio with C++ develop environment
+- Microsoft Visual Studio 2022 with C++ develop environment
 - OpenCV
 
 ## steps:
-1. Create a Visual Studio Solution, C++ blank project.
+1. Import the Visual Studio Projcet into Visual Studio
 2. Set up openCV environment for the project.(you can search for detailed steps)
-3. Import the source code to the project, put it into the project folder.
-4. Move the GFX folder to the folder where the souce codes are
-5. Edit project settings:
-- Character set => Use Unicode Character Set
-
