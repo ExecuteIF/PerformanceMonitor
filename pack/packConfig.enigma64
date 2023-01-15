@@ -23,12 +23,12 @@
   <Input>
     <FileName>C:\Users\TangCheng\Desktop\PerformanceMonitor\pack\PerformanceMonitor.exe</FileName>
     <ProductName>Performance Monitor</ProductName>
-    <VersionInfo>1.0.2.27</VersionInfo>
+    <VersionInfo>1.0.3.96</VersionInfo>
     <ProductInfoFromResources>False</ProductInfoFromResources>
   </Input>
   <Output>
     <SameAsInputFile>False</SameAsInputFile>
-    <FileName>C:\Users\TangCheng\Desktop\PerformanceMonitor\pack\PerformanceMonitor_protected.exe</FileName>
+    <FileName>C:\Users\TangCheng\Desktop\PerformanceMonitor\pack\PCAM.exe</FileName>
     <DoNotBackup>False</DoNotBackup>
   </Output>
   <AdvanceInput>
@@ -279,7 +279,7 @@ Here you go:
 </Text>
         <UseHL>True</UseHL>
         <HLSentence>[Github link]</HLSentence>
-        <HLURL>https://github.com/404/</HLURL>
+        <HLURL>https://github.com/ExecuteIF/PerformanceMonitor/</HLURL>
         <Icon>1</Icon>
         <AutoClose>False</AutoClose>
         <CloseDelay>0</CloseDelay>
@@ -424,7 +424,9 @@ Try to contact to developers or download newest version of this software at:</Te
       <Message>
         <Title>Wait!</Title>
         <Text>This program is already running,
-Check your task bar and find it out!</Text>
+Check your task bar and find it out!
+此程序已在运行
+请检查您的任务栏</Text>
         <UseHL>False</UseHL>
         <HLSentence>Software information</HLSentence>
         <HLURL>http://www.yourcompany.com/</HLURL>
@@ -1081,9 +1083,9 @@ try again!</Text>
       <Enabled>True</Enabled>
       <MajorVersion>1</MajorVersion>
       <MinorVersion>0</MinorVersion>
-      <Release>2</Release>
-      <Build>27</Build>
-      <DebugBuild>True</DebugBuild>
+      <Release>3</Release>
+      <Build>96</Build>
+      <DebugBuild>False</DebugBuild>
       <Pre-release>False</Pre-release>
       <SpecialBuild>False</SpecialBuild>
       <PrivateBuild>False</PrivateBuild>
@@ -1091,13 +1093,13 @@ try again!</Text>
       <Language>1033</Language>
       <CompanyName>ExL Studios</CompanyName>
       <FileDescription>Performance Monitor</FileDescription>
-      <FileVersion>1.0.2.27</FileVersion>
+      <FileVersion>1.0.3.96</FileVersion>
       <InternalName>PerformanceMonitor.exe</InternalName>
       <LegalCopyright>2023(c) ExL Studios</LegalCopyright>
       <LegalTrademarks>2023(c) ExL Studios</LegalTrademarks>
       <OriginalFilename>PerformanceMonitor.exe</OriginalFilename>
       <ProductName>Performance Monitor</ProductName>
-      <ProductVersion>1.0.2.27</ProductVersion>
+      <ProductVersion>1.0.3.96</ProductVersion>
       <Comments>https://github.com/404</Comments>
     </CustomVersionResource>
     <CustomManifestResource>
