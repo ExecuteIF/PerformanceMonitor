@@ -1,6 +1,7 @@
 # PerformanceMonitor
 A Performance Monitor with Boeing 737 EICAS Style
 ![图片](https://user-images.githubusercontent.com/68136140/212523223-296007e8-ffde-4610-8178-fa348b245e23.png)
+![图片](https://user-images.githubusercontent.com/68136140/212523299-8881e0f5-3c34-4b54-b4f4-936960dc0c2e.png)
 
 
 # Install
